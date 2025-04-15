@@ -1,0 +1,283 @@
+{% extends "public/base.html" %}
+
+{% block title %}Results - {{ race.name }}{% endblock %}
+
+{% block public_content %}
+<!-- Results Header -->
+<div class="bg-primary text-white py-4">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2">{{ race.name }} - Results</h1>
+                <p class="lead mb-0">
+                    <i class="fas fa-calendar me-2"></i>{{ race.date.strftime('%B %d, %Y') }}
+                    <i class="fas fa-map-marker-alt ms-3 me-2"></i>{{ race.location }}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <button class="btn btn-light me-2" onclick="downloadResults('pdf')">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
+                <button class="btn btn-light" onclick="downloadResults('excel')">
+                    <i class="fas fa-file-excel"></i> Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+    <!-- Race Statistics -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Total Runners</h5>
+                    <p class="display-6 mb-0">{{ total_runners }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Finishers</h5>
+                    <p class="display-6 mb-0">{{ finishers }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">DNF</h5>
+                    <p class="display-6 mb-0">{{ dnf_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">DNS</h5>
+                    <p class="display-6 mb-0">{{ dns_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Content -->
+    <div class="card">
+        <div class="card-body">
+            <!-- Event Tabs -->
+            <ul class="nav nav-tabs mb-4" role="tablist">
+                {% for event in race.events %}
+                <li class="nav-item">
+                    <a class="nav-link {% if loop.first %}active{% endif %}" 
+                       data-bs-toggle="tab" 
+                       href="#event-{{ event.id }}"
+                       role="tab">
+                        {{ event.name }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <!-- Search and Filters -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <input type="text" 
+                           class="form-control" 
+                           id="searchInput" 
+                           placeholder="Search by name or bib number"
+                           onkeyup="filterResults()">
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="genderFilter" onchange="filterResults()">
+                        <option value="">All Genders</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="ageGroupFilter" onchange="filterResults()">
+                        <option value="">All Age Groups</option>
+                        <option value="18-29">18-29</option>
+                        <option value="30-39">30-39</option>
+                        <option value="40-49">40-49</option>
+                        <option value="50-59">50-59</option>
+                        <option value="60+">60+</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="statusFilter" onchange="filterResults()">
+                        <option value="">All Statuses</option>
+                        <option value="finished">Finished</option>
+                        <option value="DNF">DNF</option>
+                        <option value="DNS">DNS</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Results Tables -->
+            <div class="tab-content">
+                {% for event in race.events %}
+                <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+                     id="event-{{ event.id }}" 
+                     role="tabpanel">
+                    
+                    <!-- Event Stats -->
+                    <div class="alert alert-info mb-4">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <strong>Distance:</strong> {{ event.distance }}km
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Participants:</strong> {{ event.results|length }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Finishers:</strong> 
+                                {{ event.results|selectattr('status', 'equalto', 'finished')|list|length }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Average Time:</strong> 
+                                {{ calculate_average_time(event.results) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="results-table-{{ event.id }}">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable({{ event.id }}, 0)">Position</th>
+                                    <th onclick="sortTable({{ event.id }}, 1)">Bib #</th>
+                                    <th onclick="sortTable({{ event.id }}, 2)">Name</th>
+                                    <th onclick="sortTable({{ event.id }}, 3)">Gender</th>
+                                    <th onclick="sortTable({{ event.id }}, 4)">Age Group</th>
+                                    <th onclick="sortTable({{ event.id }}, 5)">Club</th>
+                                    <th onclick="sortTable({{ event.id }}, 6)">Time</th>
+                                    <th onclick="sortTable({{ event.id }}, 7)">Category Pos</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in event.results|sort(attribute='finish_time') %}
+                                <tr class="result-row" 
+                                    data-gender="{{ result.runner.gender }}"
+                                    data-age-group="{{ get_age_group(result.runner.birth_date) }}"
+                                    data-status="{{ result.status }}">
+                                    <td>{{ loop.index if result.status == 'finished' else '-' }}</td>
+                                    <td>{{ result.bib_number }}</td>
+                                    <td>{{ result.runner.first_name }} {{ result.runner.last_name }}</td>
+                                    <td>{{ result.runner.gender }}</td>
+                                    <td>{{ get_age_group(result.runner.birth_date) }}</td>
+                                    <td>{{ result.runner.club or '-' }}</td>
+                                    <td>{{ format_duration(result.start_time, result.finish_time) if result.status == 'finished' else '-' }}</td>
+                                    <td>{{ get_category_position(result) if result.status == 'finished' else '-' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ get_status_class(result.status) }}">
+                                            {{ result.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Checkpoint Times (if applicable) -->
+                    {% if event.has_checkpoints %}
+                    <div class="mt-4">
+                        <h5>Checkpoint Times</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Bib #</th>
+                                        <th>Name</th>
+                                        {% for checkpoint in event.checkpoints %}
+                                        <th>{{ checkpoint.name }}</th>
+                                        {% endfor %}
+                                        <th>Finish</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in event.results %}
+                                    {% if result.status == 'finished' %}
+                                    <tr>
+                                        <td>{{ result.bib_number }}</td>
+                                        <td>{{ result.runner.first_name }} {{ result.runner.last_name }}</td>
+                                        {% for checkpoint in event.checkpoints %}
+                                        <td>{{ format_time(result.checkpoint_times[checkpoint.id]) }}</td>
+                                        {% endfor %}
+                                        <td>{{ format_duration(result.start_time, result.finish_time) }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterResults() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const gender = document.getElementById('genderFilter').value;
+    const ageGroup = document.getElementById('ageGroupFilter').value;
+    const status = document.getElementById('statusFilter').value;
+
+    document.querySelectorAll('.result-row').forEach(row => {
+        const nameCell = row.children[2].textContent.toLowerCase();
+        const bibNumber = row.children[1].textContent;
+        const rowGender = row.dataset.gender;
+        const rowAgeGroup = row.dataset.ageGroup;
+        const rowStatus = row.dataset.status;
+
+        const matchesSearch = nameCell.includes(search) || bibNumber.includes(search);
+        const matchesGender = !gender || rowGender === gender;
+        const matchesAgeGroup = !ageGroup || rowAgeGroup === ageGroup;
+        const matchesStatus = !status || rowStatus === status;
+
+        row.style.display = 
+            matchesSearch && matchesGender && matchesAgeGroup && matchesStatus 
+                ? '' 
+                : 'none';
+    });
+}
+
+function sortTable(eventId, columnIndex) {
+    const table = document.getElementById(`results-table-${eventId}`);
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const isNumeric = [0, 1, 6].includes(columnIndex);  // Position, Bib, Time columns
+
+    rows.sort((a, b) => {
+        let aValue = a.children[columnIndex].textContent;
+        let bValue = b.children[columnIndex].textContent;
+
+        if (isNumeric) {
+            aValue = aValue === '-' ? Infinity : parseFloat(aValue);
+            bValue = bValue === '-' ? Infinity : parseFloat(bValue);
+            return aValue - bValue;
+        }
+
+        return aValue.localeCompare(bValue);
+    });
+
+    const tbody = table.querySelector('tbody');
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function downloadResults(format) {
+    window.location.href = `/race/${raceId}/results/download/${format}`;
+}
+</script>
+{% endblock %}

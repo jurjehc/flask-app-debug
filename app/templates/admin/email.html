@@ -1,0 +1,254 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Email Runners - {{ race.name }}{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">{{ race.name }} - Email Runners</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.races') }}">Races</a></li>
+                    <li class="breadcrumb-item active">Email</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Email Composition -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Compose Email</h5>
+                </div>
+                <div class="card-body">
+                    <form id="emailForm" onsubmit="sendEmail(event)">
+                        <div class="mb-3">
+                            <label class="form-label">Recipients</label>
+                            <select class="form-select" id="recipients" name="recipients">
+                                <option value="all">All Runners</option>
+                                <option value="registered">Registered Runners</option>
+                                <option value="finished">Finished Runners</option>
+                                <option value="not_finished">Not Finished Runners</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="subject" name="subject" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Template</label>
+                            <select class="form-select" id="template" onchange="loadTemplate()">
+                                <option value="">Custom Message</option>
+                                <option value="race_info">Race Information</option>
+                                <option value="start_instructions">Start Instructions</option>
+                                <option value="results">Race Results</option>
+                                <option value="thank_you">Thank You Message</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Message</label>
+                            <textarea class="form-control" id="message" name="message" rows="10" required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="include_results" name="include_results">
+                                <label class="form-check-label">Include Individual Results</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Available Tags</label>
+                            <div class="badges">
+                                <span class="badge bg-secondary me-2" onclick="insertTag('runner_name')">
+                                    {runner_name}
+                                </span>
+                                <span class="badge bg-secondary me-2" onclick="insertTag('race_name')">
+                                    {race_name}
+                                </span>
+                                <span class="badge bg-secondary me-2" onclick="insertTag('race_date')">
+                                    {race_date}
+                                </span>
+                                <span class="badge bg-secondary me-2" onclick="insertTag('start_time')">
+                                    {start_time}
+                                </span>
+                                <span class="badge bg-secondary me-2" onclick="insertTag('bib_number')">
+                                    {bib_number}
+                                </span>
+                            </div>
+                            <small class="form-text text-muted">Click to insert tags into the message</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="sendButton">
+                            <i class="fas fa-paper-plane"></i> Send Email
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="previewEmail()">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recipients Info -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recipients Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Total Runners:</strong> {{ race.runners|length }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Registered:</strong> {{ registered_count }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Finished:</strong> {{ finished_count }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Not Finished:</strong> {{ not_finished_count }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Email History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for email in email_history %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ email.subject }}</h6>
+                                <small>{{ email.sent_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <p class="mb-1">Sent to: {{ email.recipient_count }} runners</p>
+                            <small class="text-muted">{{ email.status }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Email Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Subject:</strong>
+                    <p id="previewSubject"></p>
+                </div>
+                <div class="mb-3">
+                    <strong>Message:</strong>
+                    <div id="previewMessage" class="border p-3 rounded"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let previewModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+});
+
+function loadTemplate() {
+    const template = document.getElementById('template').value;
+    if (!template) return;
+
+    fetch(`/admin/email/template/${template}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('subject').value = data.subject;
+            document.getElementById('message').value = data.message;
+        });
+}
+
+function insertTag(tag) {
+    const message = document.getElementById('message');
+    const tagText = `{${tag}}`;
+    
+    // Insert at cursor position
+    const start = message.selectionStart;
+    const end = message.selectionEnd;
+    message.value = message.value.substring(0, start) + tagText + message.value.substring(end);
+    
+    // Move cursor after inserted tag
+    message.selectionStart = message.selectionEnd = start + tagText.length;
+    message.focus();
+}
+
+function previewEmail() {
+    const subject = document.getElementById('subject').value;
+    const message = document.getElementById('message').value;
+    
+    // Replace tags with sample values
+    const previewMessage = message
+        .replace(/{runner_name}/g, 'John Doe')
+        .replace(/{race_name}/g, '{{ race.name }}')
+        .replace(/{race_date}/g, '{{ race.date.strftime("%Y-%m-%d") }}')
+        .replace(/{start_time}/g, '{{ race.date.strftime("%H:%M") }}')
+        .replace(/{bib_number}/g, '123');
+
+    document.getElementById('previewSubject').textContent = subject;
+    document.getElementById('previewMessage').innerHTML = previewMessage.replace(/\n/g, '<br>');
+    
+    previewModal.show();
+}
+
+function sendEmail(event) {
+    event.preventDefault();
+    
+    if (!confirm('Are you sure you want to send this email?')) {
+        return;
+    }
+
+    const button = document.getElementById('sendButton');
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+    const formData = new FormData(document.getElementById('emailForm'));
+    
+    fetch(`/admin/race/${raceId}/email`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Emails sent successfully');
+            window.location.reload();
+        } else {
+            alert('Error sending emails');
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-paper-plane"></i> Send Email';
+        }
+    });
+}
+</script>
+{% endblock %}

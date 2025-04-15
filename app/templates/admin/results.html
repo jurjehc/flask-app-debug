@@ -1,0 +1,81 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Race Results{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">Race Results</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Results</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Completed Races -->
+    {% if races %}
+    <div class="row">
+        {% for race in races %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ race.name }}</h5>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-calendar me-2"></i>{{ race.date.strftime('%B %d, %Y') }}
+                    </p>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-map-marker-alt me-2"></i>{{ race.location }}
+                    </p>
+                    <p class="text-muted mb-3">
+                        <i class="fas fa-users me-2"></i>{{ race.runners|length }} participants
+                    </p>
+                    <div class="mb-3">
+                        {% for event in race.events %}
+                        <span class="badge bg-primary me-2">{{ event.name }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin_panel.race_results', race_id=race.id) }}" 
+                           class="btn btn-primary">
+                            View Results
+                        </a>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-secondary" 
+                                    onclick="exportResults({{ race.id }}, 'excel')">
+                                <i class="fas fa-file-excel"></i> Export Excel
+                            </button>
+                            <button class="btn btn-outline-secondary" 
+                                    onclick="exportResults({{ race.id }}, 'pdf')">
+                                <i class="fas fa-file-pdf"></i> Export PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <h4 class="text-muted">No completed races found</h4>
+        <p class="text-muted">Results will appear here after races are finished.</p>
+        <a href="{{ url_for('admin_panel.races') }}" class="btn btn-primary mt-3">
+            View All Races
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportResults(raceId, format) {
+    window.location.href = `/admin_panel/race/${raceId}/results/export/${format}`;
+}
+</script>
+{% endblock %}

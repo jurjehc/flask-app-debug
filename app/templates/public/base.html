@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url_for('public.index') }}">
+            <span class="text-primary fw-bold">Trkaljka</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('public.race_list', status='upcoming') }}">Upcoming Races</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('public.race_list', status='past') }}">Past Races</a>
+                </li>
+            </ul>
+            <div class="d-flex">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin_panel.dashboard') }}" class="btn btn-outline-primary me-2">Admin Panel</a>
+                    {% endif %}
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+    {% block public_content %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,375 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Race Timing - {{ race.name }}{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">{{ race.name }} - Timing</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.timing_list') }}">Timing</a></li>
+                    <li class="breadcrumb-item active">{{ race.name }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="btn-group">
+            {% if race.status == 'open' %}
+                <button class="btn btn-success" onclick="startRace()">
+                    <i class="fas fa-play"></i> Start Race
+                </button>
+            {% elif race.status == 'in_progress' %}
+                <button class="btn btn-danger" onclick="finishRace()">
+                    <i class="fas fa-flag-checkered"></i> Finish Race
+                </button>
+            {% endif %}
+            <a href="{{ url_for('admin_panel.race_results', race_id=race.id) }}" class="btn btn-info">
+                <i class="fas fa-trophy"></i> View Results
+            </a>
+        </div>
+    </div>
+
+    <!-- Race Info & Quick Entry -->
+    <div class="row g-4 mb-4">
+        <!-- Race Info Card -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Race Information</h5>
+                    <div class="mb-2">
+                        <strong>Date:</strong> {{ race.date.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Location:</strong> {{ race.location }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Status:</strong> 
+                        <span class="badge bg-{{ get_race_status_class(race.status) }}">
+                            {{ race.status }}
+                        </span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Total Runners:</strong> {{ race.runners|length }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Entry Card -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Entry</h5>
+                    <div class="input-group input-group-lg mb-3">
+                        <input type="number" id="bibNumber" class="form-control" 
+                               placeholder="Enter Bib Number" autofocus>
+                        <button class="btn btn-primary" onclick="recordFinish()">
+                            Record Finish
+                        </button>
+                    </div>
+                    <div class="form-text">Press Enter or click button to record finish time</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Events Tabs -->
+    <div class="card">
+        <div class="card-body">
+            <ul class="nav nav-tabs" role="tablist">
+                {% for event in race.events %}
+                <li class="nav-item">
+                    <a class="nav-link {% if loop.first %}active{% endif %}" 
+                       data-bs-toggle="tab" 
+                       href="#event-{{ event.id }}" 
+                       role="tab">
+                        {{ event.name }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <div class="tab-content mt-4">
+                {% for event in race.events %}
+                <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+                     id="event-{{ event.id }}" 
+                     role="tabpanel">
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="runners-table-{{ event.id }}">
+                            <thead>
+                                <tr>
+                                    <th>Bib #</th>
+                                    <th>Runner</th>
+                                    <th>Start Time</th>
+                                    <th>Finish Time</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in event.results %}
+                                <tr id="result-{{ result.id }}">
+                                    <td>{{ result.bib_number }}</td>
+                                    <td>{{ result.runner.first_name }} {{ result.runner.last_name }}</td>
+                                    <td class="start-time">
+                                        {{ result.start_time.strftime('%H:%M:%S') if result.start_time else '-' }}
+                                    </td>
+                                    <td class="finish-time">
+                                        {{ result.finish_time.strftime('%H:%M:%S') if result.finish_time else '-' }}
+                                    </td>
+                                    <td class="duration">
+                                        {{ format_duration(result.start_time, result.finish_time) }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ get_status_class(result.status) }}">
+                                            {{ result.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                    onclick="editTime({{ result.id }})"
+                                                    title="Edit Times">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    onclick="markDNF({{ result.id }})"
+                                                    title="Mark DNF">
+                                                DNF
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if event.has_checkpoints %}
+                    <div class="mt-4">
+                        <h5>Checkpoint Times</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Bib #</th>
+                                        <th>Name</th>
+                                        {% for checkpoint in event.checkpoints %}
+                                        <th>{{ checkpoint.name }}</th>
+                                        {% endfor %}
+                                        <th>Finish</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in event.results %}
+                                    <tr>
+                                        <td>{{ result.bib_number }}</td>
+                                        <td>{{ result.runner.first_name }} {{ result.runner.last_name }}</td>
+                                        {% for checkpoint in event.checkpoints %}
+                                        <td>{{ result.checkpoint_times.get(checkpoint.id, '-') if result.checkpoint_times else '-' }}</td>
+                                        {% endfor %}
+                                        <td>{{ format_duration(result.start_time, result.finish_time) if result.status == 'finished' else '-' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Time Modal -->
+<div class="modal fade" id="editTimeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Times</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editTimeForm">
+                    <input type="hidden" id="result_id" name="result_id">
+                    <div class="mb-3">
+                        <label class="form-label">Start Time</label>
+                        <input type="time" class="form-control" id="start_time" name="start_time" step="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Finish Time</label>
+                        <input type="time" class="form-control" id="finish_time" name="finish_time" step="1">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveTime()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let editTimeModal;
+const raceId = {{ race.id }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    editTimeModal = new bootstrap.Modal(document.getElementById('editTimeModal'));
+    
+    // Handle Enter key press for bib number input
+    document.getElementById('bibNumber').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            recordFinish();
+        }
+    });
+
+    // Start auto-refresh if race is in progress
+    if ('{{ race.status }}' === 'in_progress') {
+        setInterval(refreshResults, 10000);  // Refresh every 10 seconds
+    }
+});
+
+function startRace() {
+    if (confirm('Are you sure you want to start the race?')) {
+        fetch(`/admin_panel/timing/${raceId}/start`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert('Error starting race');
+            }
+        });
+    }
+}
+
+function finishRace() {
+    if (confirm('Are you sure you want to finish the race?')) {
+        fetch(`/admin_panel/timing/${raceId}/finish`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert('Error finishing race');
+            }
+        });
+    }
+}
+
+function recordFinish() {
+    const bibNumber = document.getElementById('bibNumber').value;
+    if (!bibNumber) return;
+
+    fetch('/admin_panel/timing/record', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            race_id: raceId,
+            bib_number: bibNumber,
+            type: 'finish'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            document.getElementById('bibNumber').value = '';
+            document.getElementById('bibNumber').focus();
+            refreshResults();
+        } else {
+            alert('Error recording finish time: ' + data.message);
+        }
+    });
+}
+
+function editTime(resultId) {
+    fetch(`/admin_panel/timing/result/${resultId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('result_id').value = data.id;
+            document.getElementById('start_time').value = data.start_time;
+            document.getElementById('finish_time').value = data.finish_time;
+            editTimeModal.show();
+        });
+}
+
+function saveTime() {
+    const formData = new FormData(document.getElementById('editTimeForm'));
+    const resultId = formData.get('result_id');
+
+    fetch(`/admin_panel/timing/result/${resultId}`, {
+        method: 'PUT',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            editTimeModal.hide();
+            refreshResults();
+        } else {
+            alert('Error saving times');
+        }
+    });
+}
+
+function markDNF(resultId) {
+    if (confirm('Mark this runner as Did Not Finish (DNF)?')) {
+        fetch(`/admin_panel/timing/result/${resultId}/dnf`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                refreshResults();
+            } else {
+                alert('Error marking DNF');
+            }
+        });
+    }
+}
+
+function refreshResults() {
+    fetch(`/admin_panel/timing/${raceId}/results`)
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(result => {
+                const row = document.getElementById(`result-${result.id}`);
+                if (row) {
+                    row.querySelector('.start-time').textContent = result.start_time || '-';
+                    row.querySelector('.finish-time').textContent = result.finish_time || '-';
+                    row.querySelector('.duration').textContent = result.duration || '--:--:--';
+                    
+                    const statusBadge = row.querySelector('.badge');
+                    statusBadge.className = `badge bg-${getStatusClass(result.status)}`;
+                    statusBadge.textContent = result.status;
+                }
+            });
+        });
+}
+
+function getStatusClass(status) {
+    const classes = {
+        'registered': 'secondary',
+        'started': 'primary',
+        'finished': 'success',
+        'DNF': 'danger',
+        'DNS': 'warning'
+    };
+    return classes[status] || 'secondary';
+}
+</script>
+{% endblock %}

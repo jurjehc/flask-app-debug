@@ -1,0 +1,72 @@
+{% extends "email/base.html" %}
+
+{% block header %}{{ race.name }}{% endblock %}
+
+{% block content %}
+<h2>Hello {{ runner.first_name }},</h2>
+
+{% if notification_type == 'registration' %}
+    <p>Thank you for registering for {{ race.name }}! Here are your registration details:</p>
+    
+    <div class="info-box">
+        <p><strong>Event:</strong> {{ event.name }}</p>
+        <p><strong>Date:</strong> {{ race.date.strftime('%B %d, %Y') }}</p>
+        <p><strong>Time:</strong> {{ race.date.strftime('%H:%M') }}</p>
+        <p><strong>Location:</strong> {{ race.location }}</p>
+        <p><strong>Bib Number:</strong> {{ result.bib_number }}</p>
+    </div>
+
+    <h3>Important Information</h3>
+    <ul>
+        <li>Please arrive at least 1 hour before the race start time</li>
+        <li>Bring your ID to collect your race packet</li>
+        <li>Race packets will be available for collection from {{ packet_pickup_start }}</li>
+    </ul>
+
+    <a href="{{ url_for('public.race_detail', id=race.id, _external=True) }}" class="button">
+        View Race Details
+    </a>
+
+{% elif notification_type == 'reminder' %}
+    <p>This is a reminder that {{ race.name }} is coming up soon!</p>
+
+    <div class="info-box">
+        <p><strong>Event:</strong> {{ event.name }}</p>
+        <p><strong>Date:</strong> {{ race.date.strftime('%B %d, %Y') }}</p>
+        <p><strong>Time:</strong> {{ race.date.strftime('%H:%M') }}</p>
+        <p><strong>Location:</strong> {{ race.location }}</p>
+        <p><strong>Bib Number:</strong> {{ result.bib_number }}</p>
+    </div>
+
+    <h3>Pre-Race Checklist</h3>
+    <ul>
+        <li>Check weather forecast and prepare accordingly</li>
+        <li>Plan your arrival time and transportation</li>
+        <li>Review the course map</li>
+        <li>Prepare your race gear</li>
+    </ul>
+
+{% elif notification_type == 'results' %}
+    <p>Congratulations on completing {{ race.name }}! Here are your results:</p>
+
+    <div class="info-box">
+        <p><strong>Event:</strong> {{ event.name }}</p>
+        <p><strong>Finish Time:</strong> {{ format_duration(result.start_time, result.finish_time) }}</p>
+        <p><strong>Overall Position:</strong> {{ result.position }}</p>
+        {% if result.category_position %}
+        <p><strong>Category Position:</strong> {{ result.category_position }}</p>
+        {% endif %}
+    </div>
+
+    <a href="{{ url_for('public.race_results', id=race.id, _external=True) }}" class="button">
+        View Full Results
+    </a>
+
+{% elif notification_type == 'custom' %}
+    {{ message|safe }}
+{% endif %}
+
+<p>If you have any questions, please don't hesitate to contact us.</p>
+
+<p>Best regards,<br>The Trkaljka Team</p>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Race Timing{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4">Race Timing</h1>
+
+    {% if active_races %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Active Races</h5>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for race in active_races %}
+                <a href="{{ url_for('admin_panel.timing', race_id=race.id) }}" 
+                   class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ race.name }}</h5>
+                        <small class="text-muted">{{ race.date.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <p class="mb-1">{{ race.location }}</p>
+                    <small class="text-muted">
+                        {{ race.runners|length }} runners registered
+                        - {{ race.events_list|length }} events
+                    </small>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if upcoming_races %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Upcoming Races</h5>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for race in upcoming_races %}
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ race.name }}</h5>
+                        <small class="text-muted">{{ race.date.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <p class="mb-1">{{ race.location }}</p>
+                    <small class="text-muted">
+                        {{ race.runners|length }} runners registered
+                        - {{ race.events_list|length }} events
+                    </small>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-success" onclick="startRace({{ race.id }})">
+                            Start Race
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not active_races and not upcoming_races %}
+    <div class="text-center py-5">
+        <h4 class="text-muted">No races available for timing</h4>
+        <p class="text-muted">Create a new race or wait for upcoming races to start.</p>
+        <a href="{{ url_for('admin_panel.races') }}" class="btn btn-primary mt-3">
+            Manage Races
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function startRace(raceId) {
+    if (confirm('Are you sure you want to start this race?')) {
+        fetch(`/admin_panel/timing/${raceId}/start`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Error starting race');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error starting race');
+        });
+    }
+}
+</script>
+{% endblock %}

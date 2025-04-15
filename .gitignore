@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.swp
+.env
+.venv/
+venv/
+
+# Flask
+instance/
+.flaskenv
+
+# VS Code
+.vscode/
+
+# Database
+*.sqlite
+*.db
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db

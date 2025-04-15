@@ -1,0 +1,132 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Manage Races{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">Race Management</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Races</li>
+                </ol>
+            </nav>
+        </div>
+        <a href="{{ url_for('admin_panel.create_race') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Race
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="open" {% if request.args.get('status') == 'open' %}selected{% endif %}>Open</option>
+                        <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="date" name="date" class="form-control" value="{{ request.args.get('date', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control" placeholder="Search races..." value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Races Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Race Name</th>
+                            <th>Date</th>
+                            <th>Location</th>
+                            <th>Events</th>
+                            <th>Status</th>
+                            <th>Runners</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for race in races %}
+                        <tr>
+                            <td>{{ race.name }}</td>
+                            <td>{{ race.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ race.location }}</td>
+                            <td>
+                                {% for event in race.events %}
+                                <span class="badge bg-primary">{{ event.name }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ get_race_status_class(race.status) }}">
+                                    {{ race.status }}
+                                </span>
+                            </td>
+                            <td>{{ race.runners|length }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('admin_panel.edit_race', id=race.id) }}" 
+                                       class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin_panel.timing', race_id=race.id) }}" 
+                                       class="btn btn-sm btn-outline-success" title="Timing">
+                                        <i class="fas fa-stopwatch"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin_panel.email_runners', race_id=race.id) }}" 
+                                       class="btn btn-sm btn-outline-info" title="Email Runners">
+                                        <i class="fas fa-envelope"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="deleteRace({{ race.id }})"
+                                            title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteRace(raceId) {
+    if (confirm('Are you sure you want to delete this race? This action cannot be undone.')) {
+        fetch(`/admin_panel/race/${raceId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Error deleting race');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

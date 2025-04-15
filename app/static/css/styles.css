@@ -1,0 +1,152 @@
+/* General Styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Custom Utilities */
+.hover-shadow {
+    transition: box-shadow 0.3s ease-in-out;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Admin Sidebar */
+.admin-sidebar {
+    position: fixed;
+    top: 56px;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.admin-main {
+    margin-left: 280px;
+    margin-top: 56px;
+}
+
+/* Race Cards */
+.race-card {
+    transition: transform 0.2s;
+}
+.race-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Timeline for race schedule */
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 50px;
+    margin-bottom: 30px;
+}
+
+.timeline-date {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 40px;
+    text-align: right;
+    font-weight: bold;
+}
+
+.timeline-content {
+    border-left: 2px solid #dee2e6;
+    padding-left: 20px;
+}
+
+/* Results Table */
+.results-table th {
+    cursor: pointer;
+}
+.results-table th:hover {
+    background-color: #f8f9fa;
+}
+
+/* Form Styles */
+.form-floating > label {
+    padding-left: 1rem;
+}
+
+/* Custom Checkboxes */
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.custom-checkbox:hover {
+    background-color: #f8f9fa;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        display: none;
+    }
+    .admin-main {
+        margin-left: 0;
+    }
+}
+
+/* Loading Spinner */
+.spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Custom Alert Styles */
+.alert-float {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .admin-main {
+        margin-left: 0 !important;
+    }
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}

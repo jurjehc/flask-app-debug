@@ -1,0 +1,171 @@
+{% extends "public/base.html" %}
+
+{% block title %}Race List{% endblock %}
+
+{% block public_content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">{% if status == 'upcoming' %}Upcoming{% else %}Past{% endif %} Races</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('public.index') }}">Home</a></li>
+                    <li class="breadcrumb-item active">Races</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        <option value="road" {% if request.args.get('category') == 'road' %}selected{% endif %}>Road Races</option>
+                        <option value="trail" {% if request.args.get('category') == 'trail' %}selected{% endif %}>Trail Runs</option>
+                        <option value="ultra" {% if request.args.get('category') == 'ultra' %}selected{% endif %}>Ultra Marathons</option>
+                        <option value="fun" {% if request.args.get('category') == 'fun' %}selected{% endif %}>Fun Runs</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Distance</label>
+                    <select name="distance" class="form-select">
+                        <option value="">All Distances</option>
+                        <option value="5" {% if request.args.get('distance') == '5' %}selected{% endif %}>5K</option>
+                        <option value="10" {% if request.args.get('distance') == '10' %}selected{% endif %}>10K</option>
+                        <option value="21" {% if request.args.get('distance') == '21' %}selected{% endif %}>Half Marathon</option>
+                        <option value="42" {% if request.args.get('distance') == '42' %}selected{% endif %}>Marathon</option>
+                        <option value="ultra" {% if request.args.get('distance') == 'ultra' %}selected{% endif %}>Ultra</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Location</label>
+                    <input type="text" name="location" class="form-control" 
+                           placeholder="Enter location" 
+                           value="{{ request.args.get('location', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date Range</label>
+                    <input type="month" name="date" class="form-control" 
+                           value="{{ request.args.get('date', '') }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{{ url_for('public.race_list') }}" class="btn btn-outline-secondary">Clear Filters</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Race List -->
+    <div class="row g-4">
+        {% for race in races.items %}
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm hover-shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title">{{ race.name }}</h5>
+                        <span class="badge bg-{{ get_race_status_class(race.status) }}">
+                            {{ race.status }}
+                        </span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-calendar me-2"></i>{{ race.date.strftime('%B %d, %Y') }}
+                        </p>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-clock me-2"></i>{{ race.date.strftime('%H:%M') }}
+                        </p>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-map-marker-alt me-2"></i>{{ race.location }}
+                        </p>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-users me-2"></i>{{ race.runners|length }} runners registered
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        {% for event in race.events %}
+                        <span class="badge bg-primary me-2">{{ event.name }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <p class="card-text">{{ race.description|truncate(150) }}</p>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="btn-group">
+                            <a href="{{ url_for('public.race_detail', id=race.id) }}" 
+                               class="btn btn-outline-primary">
+                                View Details
+                            </a>
+                            {% if race.status == 'open' %}
+                            <a href="{{ url_for('public.race_register', id=race.id) }}" 
+                               class="btn btn-primary">
+                                Register Now
+                            </a>
+                            {% elif race.status == 'completed' %}
+                            <a href="{{ url_for('public.race_results', id=race.id) }}" 
+                               class="btn btn-success">
+                                View Results
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% if race.price %}
+                        <span class="text-primary fw-bold">{{ race.price }}€</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if races.pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {% if not races.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('public.race_list', page=races.prev_num) }}">Previous</a>
+            </li>
+            {% for page in races.iter_pages() %}
+                {% if page %}
+                    <li class="page-item {% if page == races.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('public.race_list', page=page) }}">{{ page }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {% if not races.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('public.race_list', page=races.next_num) }}">Next</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+
+    <!-- No Results -->
+    {% if not races.items %}
+    <div class="text-center py-5">
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h3>No races found</h3>
+        <p class="text-muted">Try adjusting your filters or check back later for new races</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hover-shadow {
+    transition: box-shadow 0.3s ease-in-out;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}

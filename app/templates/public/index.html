@@ -1,0 +1,64 @@
+{% extends "public/base.html" %}
+
+{% block title %}Welcome to Trkaljka{% endblock %}
+
+{% block public_content %}
+<div class="container py-5">
+    <div class="row mb-5">
+        <div class="col-md-8">
+            <h1 class="display-4">Welcome to Trkaljka</h1>
+            <p class="lead">Your ultimate race timing solution. Find and join upcoming races or check your results.</p>
+        </div>
+    </div>
+
+    <h2 class="mb-4">Upcoming Races</h2>
+    <div class="row">
+        {% if featured_races %}
+            {% for race in featured_races %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ race.name }}</h5>
+                        <p class="card-text text-muted">
+                            <i class="fas fa-calendar me-2"></i>{{ race.date.strftime('%B %d, %Y') }}
+                        </p>
+                        <p class="card-text text-muted">
+                            <i class="fas fa-map-marker-alt me-2"></i>{{ race.location }}
+                        </p>
+                        <div class="mb-3">
+                            {% for event in race.events %}
+                            <span class="badge bg-primary me-1">{{ event.name }}</span>
+                            {% endfor %}
+                        </div>
+                        <a href="{{ url_for('public.race_detail', id=race.id) }}" class="btn btn-primary">Learn More</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col">
+                <p class="text-muted">No upcoming races at the moment.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if latest_results %}
+    <h2 class="mb-4 mt-5">Latest Results</h2>
+    <div class="row">
+        {% for race in latest_results %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ race.name }}</h5>
+                    <p class="card-text text-muted">
+                        <i class="fas fa-calendar me-2"></i>{{ race.date.strftime('%B %d, %Y') }}
+                    </p>
+                    <a href="{{ url_for('public.race_results', id=race.id) }}" class="btn btn-outline-primary">View Results</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
