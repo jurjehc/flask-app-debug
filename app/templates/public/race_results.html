@@ -130,7 +130,7 @@
                                 <strong>Distance:</strong> {{ event.distance }}km
                             </div>
                             <div class="col-md-3">
-                                <strong>Participants:</strong> {{ event.results|length }}
+                                <strong>Participants:</strong> {{ event.results.all()|length }}
                             </div>
                             <div class="col-md-3">
                                 <strong>Finishers:</strong> 

@@ -91,6 +91,14 @@
     </div>
 </div>
 
+<div class="form-group mt-3" id="age-groups-field" style="display: none;">
+    <label for="age_groups">Age Groups (JSON format)</label>
+    {{ form.age_groups(class="form-control", rows="4") }}
+    <small class="form-text text-muted">
+        Example: <code>[{"min": 0, "max": 17, "label": "Under 18"}, {"min": 18, "max": 29, "label": "18-29"}]</code>
+    </small>
+</div>
+
                         <div id="events-container" class="mb-4">
                             <h5 class="mb-3">Events</h5>
                             <div class="events-list mb-3">
@@ -189,5 +197,27 @@ document.querySelector('form').addEventListener('submit', function(e) {
         {% endfor %}
     });
 {% endif %}
+function toggleAgeGroupsField() {
+        const checkboxes = document.querySelectorAll('input[name="registration_fields"]');
+        const ageGroups = document.getElementById("age-groups-field");
+        let birthDateChecked = false;
+
+        checkboxes.forEach(cb => {
+            if (cb.value === "birth_date" && cb.checked) {
+                birthDateChecked = true;
+            }
+        });
+
+        ageGroups.style.display = birthDateChecked ? "block" : "none";
+    }
+
+    // Run on page load and whenever checkboxes change
+    document.addEventListener("DOMContentLoaded", () => {
+        toggleAgeGroupsField();
+        document.querySelectorAll('input[name="registration_fields"]').forEach(cb => {
+            cb.addEventListener("change", toggleAgeGroupsField);
+        });
+    });
+
 </script>
 {% endblock %}
