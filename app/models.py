@@ -1,6 +1,8 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+from sqlalchemy.ext.mutable import MutableList
+from sqlalchemy.dialects.sqlite import JSON
 from app import db, login
 
 
@@ -92,6 +94,7 @@ class RaceResult(db.Model):
     checkpoint_times = db.Column(db.JSON)  # Store checkpoint times as JSON
     status = db.Column(db.String(20))  # DNS, DNF, finished
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    lap_times = db.Column(MutableList.as_mutable(JSON), default=[])
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )

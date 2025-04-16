@@ -297,22 +297,31 @@ def finish_race(race_id):
 @admin_required
 def record_time():
     data = request.json
+
     result = RaceResult.query.filter_by(
         race_id=data["race_id"], bib_number=data["bib_number"]
     ).first()
 
-    if result:
-        if data["type"] == "finish":
-            result.finish_time = datetime.utcnow()
-        elif data["type"] == "checkpoint":
-            if not result.checkpoint_times:
-                result.checkpoint_times = {}
-            result.checkpoint_times[data["checkpoint"]] = datetime.utcnow().isoformat()
+    if not result:
+        return jsonify({"status": "error", "message": "Runner not found"}), 404
 
-        db.session.commit()
-        return jsonify({"status": "success"})
+    race = Race.query.get_or_404(data["race_id"])
+    if not result.lap_times:
+        result.lap_times = []
 
-    return jsonify({"status": "error", "message": "Runner not found"}), 404
+    current_time = datetime.utcnow()
+    result.lap_times.append(
+        current_time.isoformat()
+    )  # Assuming lap_times is a list field (JSON)
+
+    if len(result.lap_times) >= race.laps:
+        result.finish_time = current_time
+        result.status = "finished"
+    else:
+        result.status = "started"
+
+    db.session.commit()
+    return jsonify({"status": "success"})
 
 
 @bp.route("/results")
