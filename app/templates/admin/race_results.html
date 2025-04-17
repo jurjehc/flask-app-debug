@@ -97,15 +97,15 @@
                         <option value="F">Female</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <select class="form-select" id="ageGroupFilter" onchange="filterResults()">
-                        <option value="">All Age Groups</option>
-                        <option value="18-29">18-29</option>
-                        <option value="30-39">30-39</option>
-                        <option value="40-49">40-49</option>
-                        <option value="50+">50+</option>
-                    </select>
-                </div>
+                {% if race.age_groups %}
+<div class="col-md-2">
+    <select class="form-select" id="ageGroupFilter" onchange="filterResults()">
+        <option value="">All Age Groups</option>
+        <!-- Age group options will be inserted here by JavaScript -->
+    </select>
+</div>
+{% endif %}
+
             </div>
 
             <!-- Results Content -->
@@ -121,7 +121,7 @@
                                 <strong>Distance:</strong> {{ event.distance }}km
                             </div>
                             <div class="col-md-3">
-                                <strong>Participants:</strong> {{ event.results|length }}
+                                <strong>Participants:</strong> {{ event_results[event].count }}
                             </div>
                             <div class="col-md-3">
                                 <strong>Finishers:</strong> 
@@ -206,7 +206,7 @@
                                         <td>{{ result.bib_number }}</td>
                                         <td>{{ result.runner.first_name }} {{ result.runner.last_name }}</td>
                                         {% for checkpoint in event.checkpoints %}
-                                        <td>{{ result.checkpoint_times.get(checkpoint.id)|format_time }}</td>
+                                        <td>{{ result.checkpoint_times.get(checkpoint.id) | format_time }}</td>
                                         {% endfor %}
                                         <td>{{ format_duration(result.start_time, result.finish_time) }}</td>
                                     </tr>
@@ -267,10 +267,43 @@ document.addEventListener('DOMContentLoaded', function() {
     editResultModal = new bootstrap.Modal(document.getElementById('editResultModal'));
 });
 
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if age_groups exists and initialize the dropdown
+    {% if race.age_groups %}
+        try {
+            // Parse the age groups from the Text field (which contains JSON)
+            const ageGroupsText = `{{ race.age_groups | safe }}`;
+            const ageGroups = JSON.parse(ageGroupsText);
+            
+            // Get the dropdown element
+            const dropdown = document.getElementById('ageGroupFilter');
+            
+            // Add options for each age group
+            if (Array.isArray(ageGroups)) {
+                ageGroups.forEach(group => {
+                    if (group && group.label) {
+                        const option = document.createElement('option');
+                        option.value = group.label;
+                        option.textContent = group.label;
+                        dropdown.appendChild(option);
+                    }
+                });
+            } else {
+                console.error('Age groups data is not in the expected format');
+                document.getElementById('ageGroupFilter').closest('.col-md-2').style.display = 'none';
+            }
+        } catch(e) {
+            console.error('Error parsing age groups:', e);
+            // Hide the dropdown if there's an error parsing
+            document.getElementById('ageGroupFilter').closest('.col-md-2').style.display = 'none';
+        }
+    {% endif %}
+});
+
 function filterResults() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const gender = document.getElementById('genderFilter').value;
-    const ageGroup = document.getElementById('ageGroupFilter').value;
+    const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const gender = document.getElementById('genderFilter')?.value || '';
+    const ageGroup = document.getElementById('ageGroupFilter')?.value || '';
 
     document.querySelectorAll('.result-row').forEach(row => {
         const nameCell = row.children[2].textContent.toLowerCase();

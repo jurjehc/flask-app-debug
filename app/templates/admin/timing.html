@@ -52,7 +52,11 @@
                         </span>
                     </div>
                     <div class="mb-2">
-                        <strong>Total Runners:</strong> {{ race.runners|length }}
+                        <strong>Total Runners:</strong> {{ results|length }}
+                        <div class="mb-2"><strong>Started:</strong> {{ results|selectattr('status', 'equalto', 'started')|list|length }}</div>
+<div class="mb-2"><strong>Finished:</strong> {{ results|selectattr('status', 'equalto', 'finished')|list|length }}</div>
+<div class="mb-2"><strong>DNF:</strong> {{ results|selectattr('status', 'equalto', 'DNF')|list|length }}</div>
+<div class="mb-2"><strong>DNS:</strong> {{ results|selectattr('status', 'equalto', 'DNS')|list|length }}</div>
                     </div>
                 </div>
             </div>
@@ -219,6 +223,8 @@
 {% endblock %}
 
 {% block extra_js %}
+
+
 <script>
 let editTimeModal;
 const raceId = {{ race.id }};
@@ -274,7 +280,8 @@ function finishRace() {
 function recordFinish() {
     const bibNumber = document.getElementById('bibNumber').value;
     if (!bibNumber) return;
-
+    console.log("Bib number:", bibNumber);
+    console.log("Race ID:", raceId);
     fetch('/admin_panel/timing/record', {
         method: 'POST',
         headers: {

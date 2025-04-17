@@ -6,6 +6,9 @@ from flask_mail import Mail
 from flask_admin import Admin
 from config import Config
 from app.utils.helpers import get_race_status_class  # Add this line
+from datetime import datetime
+
+
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -27,6 +30,8 @@ def create_app(config_class=Config):
     login.init_app(app)
     mail.init_app(app)
     flask_admin.init_app(app)
+
+    app.jinja_env.filters['format_time'] = format_time
 
     # Register context processors
     @app.context_processor
@@ -67,6 +72,19 @@ def create_app(config_class=Config):
     app.jinja_env.globals['format_duration'] = format_duration
     return app
 
+    
+
 from app import models
+
+def format_time(value, format='%H:%M:%S'):
+        """Format datetime or time string"""
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            try:
+                value = datetime.fromisoformat(value)
+            except ValueError:
+                return value
+        return value.strftime(format)
 
 

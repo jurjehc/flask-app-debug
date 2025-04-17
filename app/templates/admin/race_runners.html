@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Manage Runners for {{ race.name }}{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">Manage Race Runners</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_panel.races') }}">Races</a></li>
+                    <li class="breadcrumb-item active">{{ race.name }} Runners</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Race Information -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5 class="card-title">{{ race.name }}</h5>
+                    <p class="text-muted">{{ race.date.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Location</h6>
+                    <p>{{ race.location }}</p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Status</h6>
+                    <span class="badge bg-{{ get_status_class(race.status) }}">{{ race.status }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Runners Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Registered Runners</h5>
+            <div class="input-group" style="max-width: 300px;">
+                <input type="text" id="runner-search" class="form-control" placeholder="Search runners...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="runners-table">
+                    <thead>
+                        <tr>
+                            <th>Bib #</th>
+                            <th>Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Club</th>
+                            <th>Event</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                        <tr>
+                            <td>{{ result.bib_number or '-' }}</td>
+                            <td>{{ result.runner.name }}</td>
+                            <td>{{ calculate_age(result.runner.birth_date) if result.runner.birth_date else '-' }}</td>
+                            <td>{{ 'Male' if result.runner.gender == 'M' else 'Female' }}</td>
+                            <td>{{ result.runner.club or '-' }}</td>
+                            <td>{{ result.event.name }}</td>
+                            <td>
+                                <span class="badge bg-{{ get_status_class(result.status) }}">
+                                    {{ result.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin_panel.edit_race_runner', race_id=race.id, runner_id=result.runner.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize DataTable with search functionality
+        var table = $('#runners-table').DataTable({
+            responsive: true,
+            order: [[0, 'asc']] // Sort by bib number by default
+        });
+        
+        // Connect search box to DataTable search
+        $('#runner-search').on('keyup', function() {
+            table.search(this.value).draw();
+        });
+    });
+</script>
+{% endblock %}

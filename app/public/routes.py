@@ -130,15 +130,106 @@ def race_register(id):
 
 @bp.route("/race/<int:id>/results")
 def race_results(id):
+    import json
+    from datetime import datetime, timedelta
+    
     race = Race.query.get_or_404(id)
     results = (
         RaceResult.query.filter_by(race_id=id).order_by(RaceResult.finish_time).all()
     )
+    
+    # Define helper functions for the template
+    def calculate_average_time(results):
+        # Filter out results with no finish time
+        valid_results = [r for r in results if r.finish_time and r.start_time]
+        
+        if not valid_results:
+            return "N/A"
+        
+        # Calculate average time
+        total_seconds = sum((r.finish_time - r.start_time).total_seconds() for r in valid_results)
+        avg_seconds = total_seconds / len(valid_results)
+        
+        # Format as HH:MM:SS
+        hours, remainder = divmod(avg_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
+    
+    def get_age_group(birth_date):
+        if not birth_date or not race.age_groups:
+            return "N/A"
+        
+        # Calculate age on race day
+        race_date = race.date.date()
+        age = race_date.year - birth_date.year
+        
+        # Adjust age if birthday hasn't occurred yet this year
+        if (birth_date.month, birth_date.day) > (race_date.month, race_date.day):
+            age -= 1
+            
+        # Parse age groups from JSON string
+        try:
+            age_groups = json.loads(race.age_groups)
+        except (json.JSONDecodeError, TypeError):
+            return "N/A"
+            
+        # Find matching age group
+        for group in age_groups:
+            if group.get("min") <= age <= group.get("max"):
+                return group.get("label")
+                
+        return "Other"  # Fallback if no matching group
+    
+    def get_category_position(result):
+        if not result or not result.finish_time or not result.runner or not result.runner.birth_date:
+            return "-"
+            
+        # Get age group
+        age_group = get_age_group(result.runner.birth_date)
+        if age_group == "N/A" or age_group == "Other":
+            return "-"
+            
+        # Get gender
+        gender = result.runner.gender
+        
+        # Get all finished results with the same event
+        all_results = [r for r in results 
+                      if r.status == 'finished' and r.finish_time and 
+                      r.event_id == result.event_id]
+        
+        # Filter results by age group and gender
+        category_results = [r for r in all_results 
+                           if get_age_group(r.runner.birth_date) == age_group 
+                           and r.runner.gender == gender]
+        
+        # Sort by finish time
+        category_results.sort(key=lambda r: r.finish_time)
+        
+        # Find position of current result
+        for i, r in enumerate(category_results):
+            if r.id == result.id:
+                return i + 1  # +1 because positions start at 1, not 0
+                
+        return "-"  # Should not happen if result is in the list
+    
+    def get_status_class(status):
+        classes = {
+            "registered": "secondary",
+            "started": "primary",
+            "finished": "success",
+            "DNF": "danger",
+            "DNS": "warning",
+        }
+        return classes.get(status, "secondary")
+    
     return render_template(
         "public/race_results.html",
         race=race,
         results=results,
         calculate_average_time=calculate_average_time,
+        get_age_group=get_age_group,
+        get_category_position=get_category_position,
+        get_status_class=get_status_class
     )
 
 

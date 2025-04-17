@@ -41,7 +41,8 @@ class Race(db.Model):
     date = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(128))
     description = db.Column(db.Text)
-    status = db.Column(db.String(20), default="open")  # open, in_progress, completed
+    status = db.Column(db.String(20), default="open")
+    laps = db.Column(db.Integer, nullable=False, default=1)
     admin_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     events = db.relationship(
         "Event", backref="race", lazy="dynamic", cascade="all, delete-orphan"
@@ -81,7 +82,10 @@ class Runner(db.Model):
     emergency_contact = db.Column(db.String(128))
     results = db.relationship("RaceResult", backref="runner", lazy="dynamic")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
+    
+    @property
+    def name(self):
+        return f"{self.first_name} {self.last_name}"
 
 class RaceResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -92,9 +96,10 @@ class RaceResult(db.Model):
     start_time = db.Column(db.DateTime)
     finish_time = db.Column(db.DateTime)
     checkpoint_times = db.Column(db.JSON)  # Store checkpoint times as JSON
+    custom_fields = db.Column(MutableList.as_mutable(JSON), default=dict)
     status = db.Column(db.String(20))  # DNS, DNF, finished
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    lap_times = db.Column(MutableList.as_mutable(JSON), default=[])
+    lap_times = db.Column(MutableList.as_mutable(JSON), default=list)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )

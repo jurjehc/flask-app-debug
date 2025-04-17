@@ -8,7 +8,7 @@ from wtforms import (
     SelectField,
 )
 from wtforms import BooleanField, SubmitField, SelectMultipleField
-from wtforms.validators import DataRequired, Email, Optional, NumberRange
+from wtforms.validators import DataRequired, Email, Optional, NumberRange, InputRequired
 
 
 class RaceForm(FlaskForm):
@@ -44,7 +44,9 @@ class EventForm(FlaskForm):
     )
     has_checkpoints = BooleanField("Has Checkpoints")
     number_of_laps = IntegerField(
-        "Number of Laps", validators=[Optional(), NumberRange(min=1)]
+        "Number of Laps", 
+        validators=[InputRequired(), NumberRange(min=1)],  # Changed from Optional()
+        default=1  # Add default value
     )
     submit = SubmitField("Save Event")
 
@@ -62,16 +64,11 @@ class RunnerForm(FlaskForm):
     submit = SubmitField("Save Runner")
 
 
-class RunnerResultForm(FlaskForm):
+# Add to your forms.py file
+class RaceRunnerForm(FlaskForm):
+    first_name = StringField("First Name", validators=[DataRequired()])
+    last_name = StringField("Last Name", validators=[DataRequired()])
     bib_number = IntegerField("Bib Number", validators=[Optional()])
-    event = SelectField("Event", coerce=int, validators=[DataRequired()])
-    status = SelectField(
-        "Status",
-        choices=[
-            ("registered", "Registered"),
-            ("DNS", "Did Not Start"),
-            ("DNF", "Did Not Finish"),
-            ("finished", "Finished"),
-        ],
-    )
+    birth_date = DateTimeField("Birth Date", format="%Y-%m-%d", validators=[Optional()])
+    club = StringField("Club")
     submit = SubmitField("Save Changes")

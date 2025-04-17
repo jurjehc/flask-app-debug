@@ -67,7 +67,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for race in recent_races %}
+                    {% for stat in race_stats %}
+                    {% set race = stat.race %}
                     <tr>
                         <td>{{ race.name }}</td>
                         <td>{{ race.date.strftime('%Y-%m-%d %H:%M') }}</td>
@@ -77,7 +78,14 @@
                                 {{ race.status }}
                             </span>
                         </td>
-                        <td>{{ race.runners|length }}</td>
+                        <td>
+                            Total: {{ stat.total }}<br>
+                            <span class="text-secondary">Reg: {{ stat.registered }}</span>,
+                            <span class="text-primary">Start: {{ stat.started }}</span>,
+                            <span class="text-success">Fin: {{ stat.finished }}</span>,
+                            <span class="text-danger">DNF: {{ stat.dnf }}</span>,
+                            <span class="text-warning">DNS: {{ stat.dns }}</span>
+                        </td>
                         <td>
                             <div class="btn-group">
                                 <a href="{{ url_for('admin_panel.edit_race', id=race.id) }}" 

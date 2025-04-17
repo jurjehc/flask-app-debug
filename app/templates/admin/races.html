@@ -88,6 +88,10 @@
                                        class="btn btn-sm btn-outline-success" title="Timing">
                                         <i class="fas fa-stopwatch"></i>
                                     </a>
+                                    <a href="{{ url_for('admin_panel.race_runners', race_id=race.id) }}" 
+   class="btn btn-sm btn-outline-secondary" title="Manage Runners">
+    <i class="fas fa-users"></i>
+</a>
                                     <a href="{{ url_for('admin_panel.email_runners', race_id=race.id) }}" 
                                        class="btn btn-sm btn-outline-info" title="Email Runners">
                                         <i class="fas fa-envelope"></i>
